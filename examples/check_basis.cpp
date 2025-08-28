@@ -39,6 +39,6 @@ int main() {
     std::cout << "Max orthogonality error = " << max_err << "\n";
     return 0;
 }
-// g++ -std=c++20 example/check_basis.cpp basis.cpp quadrature.cpp -Iinclude -lopenblas -o check_basis.exe
+// g++ -std=c++20 examples/check_basis.cpp basis.cpp quadrature.cpp -Iinclude -lopenblas -o check_basis.exe
 
 // ./check_basis.exe

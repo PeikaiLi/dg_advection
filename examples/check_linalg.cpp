@@ -40,7 +40,7 @@ int main() {
 
     return 0;
 }
-//  g++ -std=c++20 example/check_linalg.cpp linalg.cpp -Iinclude -lopenblas -o check_linalg.exe
+//  g++ -std=c++20 examples/check_linalg.cpp linalg.cpp -Iinclude -lopenblas -o check_linalg.exe
 // ./check_linalg.exe
 //  basis.cpp quadrature.cpp // do not need
 
