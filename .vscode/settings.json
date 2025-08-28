@@ -1,0 +1,108 @@
+// {
+//     // C++ 默认编译器路径
+//     "C_Cpp.default.compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+
+//     "terminal.integrated.env.windows": {
+//     "PATH": "C:/msys64/ucrt64/bin;${env:PATH}"
+//     }
+
+//     // 终端配置：使用 MSYS2 UCRT64 Bash
+//     "terminal.integrated.profiles.windows": {
+//         "MSYS2 UCRT64": {
+//             "path": "C:/msys64/usr/bin/bash.exe",
+//             "args": ["-i"],   // 去掉 --login，避免强制跳 home
+//             // "args": ["--login", "-i"],
+//             "env": {
+//                 "MSYSTEM": "UCRT64"
+//             }
+//         }
+//     },
+//     "terminal.integrated.defaultProfile.windows": "MSYS2 UCRT64",
+
+//     // 打开终端时，自动进入当前 workspace 根目录
+//     "terminal.integrated.cwd": "${workspaceFolder}"
+// }
+
+
+{
+    // 默认 C++ 编译器
+    "C_Cpp.default.compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+
+    // 配置 MSYS2 UCRT64 bash
+    "terminal.integrated.profiles.windows": {
+        "MSYS2 UCRT64": {
+            "path": "C:/msys64/usr/bin/bash.exe",
+            "args": ["--login", "-i"],   // login 模式，加载 alias
+            "env": {
+                "MSYSTEM": "UCRT64",
+                "CHERE_INVOKING": "1"   // 保持当前目录，不跳 home
+            }
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "MSYS2 UCRT64",
+
+    // 新终端打开时进入 workspace 根目录
+    "terminal.integrated.cwd": "${workspaceFolder}",
+
+    // 关闭多行粘贴警告（可选）
+    "terminal.integrated.enableMultiLinePasteWarning": "never",
+    "files.associations": {
+        "array": "cpp",
+        "atomic": "cpp",
+        "bit": "cpp",
+        "cctype": "cpp",
+        "charconv": "cpp",
+        "clocale": "cpp",
+        "cmath": "cpp",
+        "compare": "cpp",
+        "complex": "cpp",
+        "concepts": "cpp",
+        "cstdarg": "cpp",
+        "cstddef": "cpp",
+        "cstdint": "cpp",
+        "cstdio": "cpp",
+        "cstdlib": "cpp",
+        "cstring": "cpp",
+        "ctime": "cpp",
+        "cwchar": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "exception": "cpp",
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "random": "cpp",
+        "string_view": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "format": "cpp",
+        "initializer_list": "cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "new": "cpp",
+        "numbers": "cpp",
+        "ostream": "cpp",
+        "queue": "cpp",
+        "ranges": "cpp",
+        "span": "cpp",
+        "sstream": "cpp",
+        "stdexcept": "cpp",
+        "streambuf": "cpp",
+        "text_encoding": "cpp",
+        "cinttypes": "cpp",
+        "typeinfo": "cpp",
+        "variant": "cpp",
+        "cassert": "cpp"
+    }
+}
