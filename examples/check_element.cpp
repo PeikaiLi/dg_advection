@@ -32,22 +32,19 @@ static void transpose_rm(const std::vector<double>& A, int rows, int cols,
 
 int main() {
     std::cout << std::setprecision(12);
-
-    // 你可以改成多个 p 循环测试：{2,3,4,5,6}
     for (int p : {2, 3, 5}) {
         const int n = p + 1;
-
-        // --- 构建参考算子 ---
         std::vector<double> s, gx, gw, phi_Q, dphi_Q, Mref, Cref;
         build_reference_ops(p, s, gx, gw, phi_Q, dphi_Q, Mref, Cref);
 
-        // 1) 对称性： ‖M - M^T‖∞
+        // 1) symmetric ‖M - M^T‖∞
         std::vector<double> MT;
         transpose_rm(Mref, n, n, MT);
         double sym_err = max_abs_diff(Mref, MT, n);
 
-        // 2) 分部积分： C + C^T = S
-        //    对 Chebyshev-G-Lobatto 端点基，S 只有两处非零：
+        // 2) integral by parts C + C^T = S
+        //    Chebyshev-G-Lobatto only has 2 non-zero entries:
+        //    located on the end points.
         //    S(n-1,n-1) = +1,  S(0,0) = -1
         std::vector<double> CT;
         transpose_rm(Cref, n, n, CT);
@@ -61,7 +58,7 @@ int main() {
         for (int i = 0; i < n*n; ++i) E[i] = Cref[i] + CT[i] - S[i];
         double ibp_err = max_abs(E);   // integration-by-parts error
 
-        // 3) 打印结果
+
         std::cout << "p = " << p
                   << "  n = " << n
                   << "  ng = " << (int)gx.size() << "\n";
@@ -76,7 +73,7 @@ int main() {
 //   -Iinclude -lopenblas -o check_element.exe
 // ./check_element.exe
 
-// $ ./check_element.exe
+
 // p = 2  n = 3  ng = 3
 //   ||M - M^T||_inf = 2.77555756156e-17
 //   ||(C + C^T) - S||_inf = 6.66133814775e-16
