@@ -1,8 +1,10 @@
-#include "solver.hpp"
-#include <algorithm>
+#include <iostream>
 #include <cassert>
+#include <iomanip>
+#include <cmath>
 #include <openblas/cblas.h>
-
+#include <solver.hpp>
+#include "error_analysis.hpp"
 
 DGAdvection1D::DGAdvection1D(int p_, int ne_, double a_)
 : p(p_), np(p_+1), ne(ne_), a(a_) {
@@ -101,3 +103,61 @@ void DGAdvection1D::rk4_step(std::vector<double>& u, double dt) const {
         u[i] += (dt/6.0)*(k1[i] + 2*k2[i] + 2*k3[i] + k4[i]);
 }
 
+
+
+// return error, numerical solution at T 
+std::vector<double> DGAdvection1D::solve_pde(const double cfl, 
+    const double T,bool print_results,bool fix_time_step, double dt_fix) {
+
+    std::vector<double> u(ne*np, 0.0);
+    err.resize(ne*np);
+    uex.resize(ne*np);
+    // initialize
+    // initial condition: u0(x) = sin(2πx), stored at Chebyshev–GLL nodes
+    for (int e = 0; e < ne; ++e)
+        for (int j = 0; j < np; ++j) {
+            double x = x_of(e, j);
+            u[e*np + j] = std::sin(2.0 * std::numbers::pi * x);
+        }
+
+    // time-stepping
+    // stable time step for RK4: dt ≈ CFL * h / ((2p+1)|a|)
+    double dt = cfl * h / ((2*p + 1) * std::abs(a));
+    if (fix_time_step) {
+        dt = dt_fix;
+    }
+    int steps = (int)std::ceil(T / dt);
+    dt = T / steps; // land exactly at T
+
+    for (int s = 0; s < steps; ++s) rk4_step(u, dt);
+
+    // exact solution
+    for (int e = 0; e < ne; ++e)
+        for (int j = 0; j < np; ++j) {
+            double x = x_of(e, j);
+            double xe = std::fmod(x - a*T, 1.0);
+            if (xe < 0) xe += 1.0;
+            uex[e*np + j] = std::sin(2.0 * std::numbers::pi * xe);
+            err[e*np + j] = u[e*np + j] - uex[e*np + j];
+        }
+
+    // norms
+    double l2_sq = l2_err2_mass(err, ne, np, Mel);
+    this->l2    = std::sqrt(l2_sq);
+    this->linf  = linf_nodal(err);
+
+    if (print_results) {
+
+        std::cout << std::setprecision(6)
+                    << "p=" << p
+                    << ", ne=" << ne
+                    << ", dt=" << dt
+                    << ", steps=" << steps << "\n";
+
+        std::cout << std::scientific << std::setprecision(6);
+        std::cout << "  L2 error squared (mass-matrix): " << l2_sq << "\n";
+        std::cout << "  L2 error:                       " << this->l2    << "\n";
+        std::cout << "  Linf error (nodal):             " << this->linf  << "\n";
+    }
+    return u;
+}

@@ -30,4 +30,11 @@ struct DGAdvection1D {
         // r in [-1,1] -> x in [e*h,(e+1)h]
         return e*h + 0.5*h*(s[j] + 1.0);
     }
+
+    std::vector<double> err;
+    std::vector<double> uex;
+    double l2, linf;
+    // return error, numerical solution at T 
+    std::vector<double> solve_pde(const double cfl, 
+        const double T,bool print_results = true, bool fix_time_step = false, double dt_fix = 2*1e-4);
 };
