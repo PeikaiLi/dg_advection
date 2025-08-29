@@ -3,82 +3,58 @@
 #include <cmath>
 #include <iomanip>
 #include <numbers>
-#include <cassert>
 #include "solver.hpp"
 
-#ifndef M_PI
-#define M_PI (std::numbers::pi)
-#endif
+/*
+  L2 error via the mass matrix (what/why):
 
-/**
- * Compute Chebyshev–Gauss–Lobatto quadrature weights.
- *
- * Nodes are: x_j = cos(pi * j / p),  j = 0,...,p
- *
- * Quadrature formula:
- *   ∫_{-1}^1 f(x) / sqrt(1-x^2) dx  ≈  Σ w_j f(x_j)
- *
- * In practice (DG on [-1,1]) we use these weights to approximate
- *   ∫_{-1}^1 f(x) dx ≈ Σ w_j f(x_j),
- * because our solution u_h is stored exactly at these nodal points.
- *
- * Formula for weights:
- *   w_0 = w_p = π / (2p)
- *   w_j = π / p   for j=1,...,p-1
- */
-std::vector<double> chebyshev_gll_weights(int p) {
-    std::vector<double> w(p+1);
-    for (int j=0; j<=p; ++j) {
-        if (j==0 || j==p) w[j] = M_PI / (2.0 * p);
-        else              w[j] = M_PI / p;
-    }
-    return w;
-}
+  In each element K we represent the DG function in a nodal Lagrange basis
+      u_h(r) = sum_{j=0}^p u_j φ_j(r),  r ∈ [-1,1].
+  The continuous L2 inner-product in this finite-dimensional space is represented
+  EXACTLY by the (element) mass matrix:
+      (M_ref)_{ij} = ∫_{-1}^1 φ_i φ_j dr,   M_el = (h/2) * M_ref.
+  Therefore, for two coefficient vectors v,w (i.e., nodal values),
+      ∫_K v_h w_h dx  =  v^T M_el w.
+  Taking v = w = e (the nodal error/interpolant), we get
+      ||e_h||_{L2(K)}^2 = e^T M_el e.
+  This matches the DG inner product by construction and is mathematically exact
+  for polynomials up to degree 2p (since M_ref was built with Gauss–Legendre).
+*/
 
-/**
- * Compute discrete L2 error norm squared:
- *
- *   ||err||^2 ≈ Σ_{elements} (h/2) Σ_{j=0}^p w_j * err(x_j^K)^2
- *
- * where:
- *   - err is the error vector, stored nodally (same layout as u)
- *   - h is the element size
- *   - w_j are quadrature weights (depending on nodal choice)
- *
- * Logic: 
- *   In DG with nodal basis, our solution is stored at special nodes
- *   (e.g. Chebyshev–GLL). To approximate integrals we re-use the
- *   same nodes + their quadrature weights. This ensures that:
- *     - The discrete L2 norm corresponds to the continuous L2 inner product
- *     - Error does not "artificially grow" when p increases
- */
-double l2_error_squared(const DGAdvection1D& dg,
-    const std::vector<double>& err)
-{
-    std::vector<double> wq = chebyshev_gll_weights(dg.p);
-    assert((int)wq.size() == dg.np);
+// L2(error)^2 = sum_e e_e^T * Mel * e_e
+static double l2_error_squared_mass(const DGAdvection1D& dg,
+                                    const std::vector<double>& err) {
     double acc = 0.0;
-    for (int e=0; e<dg.ne; ++e) {
-        const double* ve = &err[e*dg.np];  // local error at element e
-        for (int j=0; j<dg.np; ++j) {
-            acc += (dg.h/2.0) * wq[j] * ve[j] * ve[j];
-        }
+    for (int e = 0; e < dg.ne; ++e) {
+        const double* ve = &err[e*dg.np];
+        for (int i = 0; i < dg.np; ++i)
+            for (int j = 0; j < dg.np; ++j)
+                acc += ve[i] * dg.Mel[i*dg.np + j] * ve[j];
     }
     return acc;
 }
 
+// Nodal max-norm: max over stored DOF locations (Chebyshev–GLL points).
+// This is not the continuous sup-norm on [0,1], but it’s the standard DG
+// "nodal L∞" and is what you can compute directly from the DOFs.
+static double linf_error_nodal(const DGAdvection1D& dg,
+                               const std::vector<double>& err) {
+    double m = 0.0;
+    for (double v : err) m = std::max(m, std::abs(v));
+    return m;
+}
 
 int main() {
     const int    p   = 16;
-    const int    ne  = 4;
-    const double a   = 1.0;
+    const int    Ne  = 16;     // number of elements
+    const double a   = 1.0;   // advection speed
     const double cfl = 0.35;
-    const double T   = 1.0;     // one period for sin(2πx) with a=1
+    const double T   = 1.0;   // one period for sin(2πx) with a=1
 
-    std::cout << "start..." << std::endl;
-    DGAdvection1D dg(p, ne, a);
-    
-    // initial condition: u0(x) = sin(2πx)
+    std::cout << "start...\n";
+    DGAdvection1D dg(p, Ne, a);
+
+    // initial condition: u0(x) = sin(2πx), stored at Chebyshev–GLL nodes
     std::vector<double> u(dg.ne * dg.np, 0.0);
     for (int e = 0; e < dg.ne; ++e)
         for (int j = 0; j < dg.np; ++j) {
@@ -87,45 +63,55 @@ int main() {
         }
 
     // stable time step for RK4: dt ≈ CFL * h / ((2p+1)|a|)
-    double dt = cfl * dg.h / ((2*p + 1) * std::abs(a));
-    int nsteps = (int)std::ceil(T / dt);
-    dt = T / nsteps; // exactly land on T
+    double dt    = cfl * dg.h / ((2*p + 1) * std::abs(a));
+    int    steps = (int)std::ceil(T / dt);
+    dt = T / steps; // land exactly at T
 
+    for (int s = 0; s < steps; ++s) dg.rk4_step(u, dt);
+    std::cout << "finished dg...\n";
 
-    // ERROR 
-    for (int s = 0; s < nsteps; ++s) dg.rk4_step(u, dt);
-
-    std::cout << "finished dg..." << std::endl;
-
-    // exact solution: shift by a*T
-    std::vector<double> uex(u.size(), 0.0), err(u.size(), 0.0);
+    // exact solution at final time: shift by a*T (periodic domain [0,1])
+    std::vector<double> uex(u.size()), err(u.size());
     for (int e = 0; e < dg.ne; ++e)
         for (int j = 0; j < dg.np; ++j) {
-            double x = dg.x_of(e, j);
-            double xe = std::fmod(x - a*T, 1.0);
+            double x  = dg.x_of(e, j);
+            double xe = std::fmod(x - a*T, 1.0);  // wrap to [0,1)
             if (xe < 0) xe += 1.0;
             uex[e*dg.np + j] = std::sin(2.0 * std::numbers::pi * xe);
             err[e*dg.np + j] = u[e*dg.np + j] - uex[e*dg.np + j];
         }
 
-    double L2 = std::sqrt(l2_error_squared(dg, err));
+    // norms
+    double L2_sq = l2_error_squared_mass(dg, err);
+    double L2    = std::sqrt(L2_sq);
+    double Linf  = linf_error_nodal(dg, err);
+
     std::cout << std::setprecision(6)
-              << "p=" << p << ", ne=" << ne
+              << "p=" << p
+              << ", ne=" << Ne
               << ", dt=" << dt
-              << ", steps=" << nsteps
-              << ",  L2 error: " << L2 << "\n";
+              << ", steps=" << steps << "\n";
+    std::cout << std::scientific << std::setprecision(6);
+    std::cout << "  L2 error squared (mass-matrix): " << L2_sq << "\n";
+    std::cout << "  L2 error:                       " << L2    << "\n";
+    std::cout << "  Linf error (nodal):             " << Linf  << "\n";
     return 0;
 }
-
 
 // g++ -std=c++20 \
 //   basis.cpp quadrature.cpp element.cpp linalg.cpp solver.cpp \
 //   examples/check_advection.cpp \
 //   -Iinclude -lopenblas -o check_advection.exe
 // ./check_advection.exe
-
 // $ ./check_advection.exe
 // start...
 // finished dg...
-// L2 error squared: 1.25484e-17
-// p=16, ne=4, dt=0.0026455, steps=378,  L2 error: 3.54238e-09
+// p=16, ne=4, dt=0.0026455, steps=378
+//   L2 error squared (mass-matrix): 7.988583e-18
+//   L2 error:                       2.826408e-09
+//   Linf error (nodal):             3.997140e-09
+
+// p=16, ne=4, dt=0.0026455, steps=378
+//   L2 error squared (mass-matrix): 7.988583e-18
+//   L2 error:                       2.826408e-09
+//   Linf error (nodal):             3.997140e-09
