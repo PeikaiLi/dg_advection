@@ -3,8 +3,8 @@ CXX = g++
 
 # Compiler flags:
 # -O2       → optimization level 2
-# -std=c++17 → use C++17 standard
-CXXFLAGS = -O2 -std=c++17
+# -std=c++20 → use C++20 standard
+CXXFLAGS = -O2 -std=c++20
 
 # Linker flags:
 # -lopenblas → link against OpenBLAS library
