@@ -29,10 +29,6 @@ Executables such as `main_dg_convergence`, `main_dgconv_diff`, `main_dg_conv_dif
 pacman -Syu
 pacman -S mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-openblas mingw-w64-ucrt-x86_64-lapack 
 ```
-### Linux/macOS
-```bash
-g++ -std=c++20 *.cpp -Iinclude -lopenblas -o dg_advection
-```
 
 ## Usage
 ```bash
