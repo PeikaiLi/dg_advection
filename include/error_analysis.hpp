@@ -27,4 +27,12 @@ double linf_nodal(const std::vector<double>& err);
 
 // ---------- one run ----------
 struct Metrics { double L2; double Linf; };
-Metrics run_once(int p, int ne, double a, double T, double cfl, bool fix_time_step = false, double dt_fix = 2*1e-4);
+Metrics run_once_DGAdvection1D(int p, int ne, double a, double T, double cfl, bool fix_time_step = false, double dt_fix = 2*1e-4);
+Metrics run_once_DGAdvection1D_Diff(int p, int ne, double mu, double a, double T, double cfl, bool fix_time_step = false, double dt_fix = 2*1e-4);
+
+// ---------- least-squares slope y = m x + b ----------
+double slope_ls(const std::vector<double>& x, const std::vector<double>& y);
+
+// slope between the two neighboring points with maximum slope (by absolute value)
+double slope_max_adjacent(const std::vector<double>& x,
+                                 const std::vector<double>& y);

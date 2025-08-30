@@ -20,7 +20,7 @@ struct DGAdvection1D {
     DGAdvection1D(int p_, int np_, double a_);
 
     // dudt = RHS(u)
-    void rhs(const std::vector<double>& u, std::vector<double>& dudt) const;
+    virtual void rhs(const std::vector<double>& u, std::vector<double>& dudt) const;
 
     // single RK4 step: u <- u + dt * Φ(u)
     void rk4_step(std::vector<double>& u, double dt) const;

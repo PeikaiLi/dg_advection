@@ -113,11 +113,12 @@ std::vector<double> DGAdvection1D::solve_pde(const double cfl,
     err.resize(ne*np);
     uex.resize(ne*np);
     // initialize
-    // initial condition: u0(x) = sin(2πx), stored at Chebyshev–GLL nodes
+    // initial condition: u0(x) = exp(-(x - 0.5)^2 / 0.1^2)
+    // stored at Chebyshev–GLL nodes
     for (int e = 0; e < ne; ++e)
         for (int j = 0; j < np; ++j) {
             double x = x_of(e, j);
-            u[e*np + j] = std::sin(2.0 * std::numbers::pi * x);
+            u[e*np + j] = std::exp(-(x - 0.5)*(x - 0.5) / (0.1*0.1));
         }
 
     // time-stepping
@@ -137,7 +138,7 @@ std::vector<double> DGAdvection1D::solve_pde(const double cfl,
             double x = x_of(e, j);
             double xe = std::fmod(x - a*T, 1.0);
             if (xe < 0) xe += 1.0;
-            uex[e*np + j] = std::sin(2.0 * std::numbers::pi * xe);
+            uex[e*np + j] = std::exp(-(xe - 0.5)*(xe - 0.5) / (0.1*0.1));
             err[e*np + j] = u[e*np + j] - uex[e*np + j];
         }
 
