@@ -1,5 +1,5 @@
 # DG Advection – 1D Discontinuous Galerkin Solver
-
+> This implementation is guided by professor Persson, and makes reference to, the course materials and codes from [UC Berkeley Math 228B (Per-Olof Persson)](https://persson.berkeley.edu/math228b/).
 A C++ implementation of high–order **Discontinuous Galerkin (DG)** methods for 1D **advection** and **advection–diffusion** equations with periodic BCs. 
 
 ## Features
